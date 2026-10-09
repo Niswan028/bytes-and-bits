@@ -1,0 +1,16 @@
+backend/.env
+node_modules/
+backend/uploads/
+backend/*.log
+*.log
+sample.pdf
+*.traineddata
+sample_documents/temp*
+sample_documents/temp_*
+sample_documents/prep_*
+frontend/dist/
+dist/
+__pycache__/
+*.pyc
+.DS_Store
+scratch/

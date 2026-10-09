@@ -1,0 +1,6 @@
+TransactionID,DispenseDate,PatientID,PatientName,PrescribedMedication,BrandName,QuantityDispensed,Unit,PrescribingProvider,PharmacistLicense,Notes
+TX-2025-0102,15-Dec-2025,P1002,Priya Venkat,Levothyroxine 50 mcg,Thyronorm 50,100,Tablets,Dr. Swaminathan (Endo),KA-PHARM-8819,Baseline dose dispensed
+TX-2026-0045,15-Jan-2026,P1002,Priya Venkat,Budesonide/Formoterol 160/4.5,Symbicort Turbuhaler,1,Inhaler (120 doses),Dr. Meera Nambiar (Pulm),KA-PHARM-8819,Refill dispensed
+TX-2026-0128,16-Feb-2026,P1002,Priya Venkat,Levothyroxine 75 mcg,Thyronorm 75,100,Tablets,Aster CMI Hospital,KA-PHARM-9021,Dose escalated per TSH 7.82
+TX-2026-0129,16-Feb-2026,P1002,Priya Venkat,Montelukast 10 mg,Montair 10,30,Tablets,Aster CMI Hospital,KA-PHARM-9021,Post-discharge fill
+TX-2026-0214,22-Mar-2026,P1002,Priya Venkat,Ibuprofen 400 mg,Brufen 400,15,Tablets,Bone & Joint Clinic,KA-PHARM-9021,Dispensed without allergy warning

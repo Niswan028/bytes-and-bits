@@ -1,0 +1,13 @@
+frontend.zip
+backend.zip
+
+node_modules/
+dist/
+build/
+
+.env
+.env.*
+*.log
+
+__pycache__/
+.venv/
