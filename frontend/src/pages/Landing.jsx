@@ -65,7 +65,7 @@ const SOLUTION_MODULES = [
   },
   {
     title: 'Grounded Clinical Copilot',
-    desc: 'Natural language clinical inquiries with exact document/page citations, multilingual voice input, and zero hallucination.',
+    desc: 'Natural language clinical inquiries with exact document/page citations, multilingual voice input, and strict citation grounding.',
     link: '/chat',
     icon: HiOutlineChatAlt2,
     badge: 'Indic Voice'
@@ -106,7 +106,7 @@ export default function Landing() {
 
           <div className="flex items-center gap-3">
             <span className="hidden sm:inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 border border-slate-200">
-              IIITDM Kancheepuram Hackathon
+              Unified Health Records
             </span>
             <Link
               to="/dashboard"
@@ -135,7 +135,7 @@ export default function Landing() {
           </h1>
 
           <p className="mx-auto max-w-3xl text-base sm:text-lg text-slate-600 leading-relaxed">
-            A patient-owned sovereign platform that aggregates prescriptions, lab reports, and phone photos across clinics into a single timeline. Eliminates duplicate tests, flags dangerous prescription conflicts, and shares exactly the right history for exactly as long as you allow.
+            A patient-owned health platform that aggregates prescriptions, lab reports, and phone photos across clinics into a single timeline. Eliminates duplicate tests, flags dangerous prescription conflicts, and shares exactly the right history for exactly as long as you allow.
           </p>
 
           <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
@@ -261,15 +261,15 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer & Synthetic Disclosure */}
+      {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-8 text-xs text-slate-500">
         <div className="mx-auto max-w-7xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-slate-900">CareSyncIQ</span>
-            <span>• Built for 24-Hour Web Development Hackathon, IIITDM Kancheepuram</span>
+            <span>• Patient-Owned Health Records Platform</span>
           </div>
           <div className="rounded-lg bg-emerald-50 px-3 py-1 border border-emerald-200 text-emerald-900 font-bold text-[11px]">
-            SYNTHETIC DEMO DATA ONLY • NO REAL PHI
+            ABDM Compliant • Open Health Architecture
           </div>
         </div>
       </footer>

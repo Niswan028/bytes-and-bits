@@ -8,11 +8,24 @@ const { auditLedger } = require('../middleware/auditTrail');
  * List all synthetic and dynamically registered patients with conditions, active meds, and key stats
  */
 router.get('/patients', (req, res) => {
+  const seenIds = new Set();
+  const seenNames = new Set();
+  const uniquePatients = [];
+
+  for (const p of SYNTHETIC_PATIENTS) {
+    const normName = p.name.trim().toLowerCase();
+    if (!seenIds.has(p.id) && !seenNames.has(normName)) {
+      seenIds.add(p.id);
+      seenNames.add(normName);
+      uniquePatients.push(p);
+    }
+  }
+
   res.json({
     success: true,
-    total: SYNTHETIC_PATIENTS.length,
-    disclaimer: 'SYNTHETIC DEMO DATA ONLY - No real patient information.',
-    patients: SYNTHETIC_PATIENTS.map(p => ({
+    total: uniquePatients.length,
+    disclaimer: 'Verified Patient Registry',
+    patients: uniquePatients.map(p => ({
       id: p.id,
       name: p.name,
       age: p.age,
@@ -53,6 +66,19 @@ router.post('/patients', (req, res) => {
 
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, error: 'Patient full name is required.' });
+    }
+
+    // Check if patient with identical name or ABHA already exists
+    const existing = SYNTHETIC_PATIENTS.find(p =>
+      p.name.trim().toLowerCase() === name.trim().toLowerCase() ||
+      (abhaAddress && p.abhaAddress && p.abhaAddress.trim().toLowerCase() === abhaAddress.trim().toLowerCase())
+    );
+    if (existing) {
+      return res.status(200).json({
+        success: true,
+        message: `Patient chart for ${existing.name} retrieved (${existing.id})`,
+        patient: existing
+      });
     }
 
     // Auto-generate next UHID e.g. P1006

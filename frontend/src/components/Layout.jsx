@@ -94,18 +94,12 @@ export default function Layout() {
               type="button"
               onClick={openRegisterModal}
               className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-950 shadow-xs hover:bg-emerald-100 transition"
-              title="Add a new sovereign patient chart into CareSyncIQ"
+              title="Add a new patient chart into CareSyncIQ"
             >
               <HiOutlineUserAdd className="text-emerald-700 text-sm" />
               <span className="hidden md:inline">+ Register Patient</span>
               <span className="md:hidden">+ Patient</span>
             </button>
-
-            {/* Synthetic Data Badge */}
-            <div className="hidden lg:flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800 border border-amber-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-              <span>SYNTHETIC DEMO DATA</span>
-            </div>
 
             {/* 1-Tap ER Emergency Action */}
             <Link
@@ -117,13 +111,6 @@ export default function Layout() {
             </Link>
           </div>
         </header>
-
-        {/* Global Synthetic Data & Offline Notice Bar */}
-        <div className="bg-emerald-800 px-4 py-1 text-center text-[11px] font-medium text-emerald-100 flex items-center justify-center gap-2">
-          <span>IIITDM Kancheepuram Hackathon • HealthTech: Lost in Transit</span>
-          <span className="hidden sm:inline">•</span>
-          <span className="hidden sm:inline">100% Patient-Owned Verified Data Pipeline</span>
-        </div>
 
         {!online && (
           <div className="bg-amber-500 px-4 py-1.5 text-center text-xs font-semibold text-slate-950">

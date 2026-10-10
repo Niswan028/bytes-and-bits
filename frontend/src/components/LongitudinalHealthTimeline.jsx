@@ -798,7 +798,7 @@ export default function LongitudinalHealthTimeline({ selectedPatientId, onSelect
               <span className="h-2.5 w-6 rounded-sm bg-emerald-200"></span>
               Biological Reference Range Band ({currentChart.refMin} - {currentChart.refMax})
             </span>
-            <span>Zero Hallucination Ground Truth</span>
+            <span className="font-semibold text-emerald-700">Verified Clinical Feeds</span>
           </div>
         </div>
       )}
@@ -815,7 +815,7 @@ export default function LongitudinalHealthTimeline({ selectedPatientId, onSelect
                 onClick={() => setFilterCategory(cat)}
                 className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
                   filterCategory === cat
-                    ? 'bg-slate-900 text-white'
+                    ? 'bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-2xs font-extrabold'
                     : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >

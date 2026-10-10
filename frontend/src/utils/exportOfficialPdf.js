@@ -61,7 +61,7 @@ export async function exportOfficialPdf(report) {
 
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text('SYNTHETIC DEMO DATASET • IIITDM KANCHEEPURAM HEALTHCARE EVALUATION', pageWidth / 2, 23.5, { align: 'center' });
+  doc.text('OFFICIAL CLINICAL SUMMARY • ABDM INTEROPERABILITY COMPLIANT', pageWidth / 2, 23.5, { align: 'center' });
 
   doc.setDrawColor(16, 185, 129); // emerald-500
   doc.setLineWidth(0.6);

@@ -97,7 +97,20 @@ export function PatientProvider({ children }) {
       const saved = localStorage.getItem('caresynciq_cached_patients');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= 5) return parsed;
+        if (Array.isArray(parsed) && parsed.length >= 5) {
+          const unique = [];
+          const seenIds = new Set();
+          const seenNames = new Set();
+          parsed.forEach(p => {
+            const norm = p.name ? p.name.trim().toLowerCase() : '';
+            if (!seenIds.has(p.id) && !seenNames.has(norm)) {
+              seenIds.add(p.id);
+              if (norm) seenNames.add(norm);
+              unique.push(p);
+            }
+          });
+          return unique;
+        }
       }
     } catch {}
     return INITIAL_BASE_PATIENTS;
@@ -128,24 +141,28 @@ export function PatientProvider({ children }) {
       setIsLoading(true);
       const res = await api.get('/patients');
       if (res.data?.success && Array.isArray(res.data.patients)) {
-        // Merge server patients with any custom patients in localStorage
         let customPatients = [];
         try {
           const stored = localStorage.getItem('caresynciq_custom_patients');
           if (stored) customPatients = JSON.parse(stored);
         } catch {}
 
-        const serverIds = new Set(res.data.patients.map(p => p.id));
-        const combined = [...res.data.patients];
-        customPatients.forEach(cp => {
-          if (!serverIds.has(cp.id)) {
-            combined.push(cp);
+        const uniqueList = [];
+        const seenIds = new Set();
+        const seenNames = new Set();
+
+        [...res.data.patients, ...customPatients].forEach(p => {
+          const normName = p.name ? p.name.trim().toLowerCase() : '';
+          if (!seenIds.has(p.id) && !seenNames.has(normName)) {
+            seenIds.add(p.id);
+            if (normName) seenNames.add(normName);
+            uniqueList.push(p);
           }
         });
 
-        setPatients(combined);
+        setPatients(uniqueList);
         try {
-          localStorage.setItem('caresynciq_cached_patients', JSON.stringify(combined));
+          localStorage.setItem('caresynciq_cached_patients', JSON.stringify(uniqueList));
         } catch {}
       }
     } catch (err) {

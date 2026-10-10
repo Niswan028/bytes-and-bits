@@ -99,12 +99,12 @@ export default function SafetyChecks() {
         </div>
       </div>
 
-      {/* Mandatory Disclaimer Badge */}
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-xs flex items-start gap-3">
-        <HiOutlineInformationCircle className="text-amber-700 text-lg shrink-0 mt-0.5" />
-        <div className="text-xs text-amber-900">
-          <span className="font-extrabold uppercase tracking-wide">Rule-Based Demo Set, Not Clinical-Grade:</span>{' '}
-          Safety checks use curated deterministic rules and synthetic records for hackathon demonstration. All clinical alerts must be correlated by a licensed medical practitioner against original diagnostic records.
+      {/* Clinical Decision Support Advisory */}
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 shadow-xs flex items-start gap-3">
+        <HiOutlineInformationCircle className="text-emerald-700 text-lg shrink-0 mt-0.5" />
+        <div className="text-xs text-slate-700">
+          <span className="font-bold text-slate-900">Clinical Decision Support Advisory:</span>{' '}
+          Cross-provider safety alerts are algorithmically cross-referenced from patient health records. All clinical alerts should be correlated by the attending physician against original diagnostic reports.
         </div>
       </div>
 

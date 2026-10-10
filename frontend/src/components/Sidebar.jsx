@@ -87,10 +87,10 @@ export default function Sidebar({ mobileOpen, onClose }) {
           </div>
           <div className="mt-2.5 flex items-center justify-between border-t border-emerald-200/60 pt-2 text-[10px] text-slate-600">
             <span className="flex items-center gap-1 font-medium text-emerald-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Sovereign In-Memory
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+              System Active
             </span>
-            <span className="font-semibold text-slate-400">IIITDM 2026</span>
+            <span className="font-semibold text-slate-400">v2.0 Clinical</span>
           </div>
         </div>
 
@@ -126,10 +126,9 @@ export default function Sidebar({ mobileOpen, onClose }) {
           ))}
         </div>
 
-        {/* Footer Disclaimer */}
-        <div className="mt-auto border-t border-slate-200 pt-3 text-[10px] text-slate-400 text-center">
-          <span className="font-bold text-emerald-700">SYNTHETIC DEMO DATA</span>
-          <p className="text-[9px] text-slate-400 mt-0.5">No Real PHI • Zero Hallucination Ground Truth</p>
+        {/* Footer */}
+        <div className="mt-auto border-t border-slate-100 pt-3 text-[10px] text-slate-400 text-center">
+          <p className="font-semibold text-slate-400">CareSyncIQ Platform</p>
         </div>
       </aside>
     </>

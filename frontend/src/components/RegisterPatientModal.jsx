@@ -205,7 +205,7 @@ export default function RegisterPatientModal() {
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Generate a sovereign longitudinal health record with ABDM ABHA identifier and automated safety tracking.
+                Generate a unified longitudinal health record with ABDM ABHA identifier and automated safety tracking.
               </p>
             </div>
           </div>

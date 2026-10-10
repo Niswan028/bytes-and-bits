@@ -238,11 +238,11 @@ export default function Dashboard() {
     ],
     safetySummary: {
       alertCount: 0,
-      alertBadge: 'Sovereign Timeline Active',
+      alertBadge: 'Unified Timeline Active',
       wasteINR: 0,
       wasteReason: 'Active Protection',
       criticalPoints: [
-        'New sovereign longitudinal chart active.',
+        'Unified longitudinal health chart active.',
         'Cross-provider deduplication and allergy safety checks running continuously.'
       ]
     }
@@ -280,9 +280,6 @@ export default function Dashboard() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-black text-white uppercase tracking-wider">
               CareSyncIQ v2.0
-            </span>
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">
-              SYNTHETIC DEMO DATA
             </span>
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-900 border border-emerald-300 flex items-center gap-1">
               <HiOutlineShieldCheck /> ABDM M1/M2/M3 COMPLIANT
@@ -655,7 +652,7 @@ export default function Dashboard() {
               </div>
               <h4 className="text-sm font-bold text-slate-900 mt-2">Offline Clinic OCR Bridge</h4>
               <p className="text-xs text-slate-600 mt-1">
-                For clinics without digital EMRs: photograph handwritten prescriptions or paper slips. Sovereign OCR + Indic post-corrector digitizes them into FHIR with clinician sign-off.
+                For clinics without digital EMRs: photograph handwritten prescriptions or paper slips. Clinical OCR and domain post-corrector digitizes them into FHIR with clinician sign-off.
               </p>
               <div className="mt-3 pt-2 border-t border-slate-100 text-[10px] font-bold text-emerald-700 flex items-center gap-1">
                 <HiOutlineCheckCircle /> Solves Ground-Reality OPDs

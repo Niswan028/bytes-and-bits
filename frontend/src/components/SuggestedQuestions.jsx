@@ -24,7 +24,7 @@ const QUESTIONS = [
   },
   {
     q: 'Does the medical record contain a Brain MRI scan or cranial imaging?',
-    category: 'Ungrounded Query Interception (Zero Hallucination)'
+    category: 'Ungrounded Query Guard (Absence Verification)'
   }
 ];
 
