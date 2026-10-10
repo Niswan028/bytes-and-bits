@@ -1,6 +1,7 @@
 import React, { Component, useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
+import { PatientProvider } from './context/PatientContext';
 
 // Robust lazy loading with automatic retry on new deployments
 function lazyWithRetry(componentImport) {
@@ -145,41 +146,43 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Suspense fallback={<PageFallback />}><Landing /></Suspense>} />
-          <Route element={<Layout />}>
-            <Route path="/dashboard" element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
-            <Route path="/timeline" element={<Suspense fallback={<PageFallback />}><TimelinePage /></Suspense>} />
-            <Route path="/patient" element={<Suspense fallback={<PageFallback />}><PatientPortal /></Suspense>} />
-            <Route path="/handoff" element={<Suspense fallback={<PageFallback />}><DoctorHandoff /></Suspense>} />
-            <Route path="/safety" element={<Suspense fallback={<PageFallback />}><SafetyChecks /></Suspense>} />
-            <Route path="/chat" element={<Suspense fallback={<PageFallback />}><Chat /></Suspense>} />
-            <Route path="/verify" element={<Suspense fallback={<PageFallback />}><VerificationQueue /></Suspense>} />
-            <Route path="/audit" element={<Suspense fallback={<PageFallback />}><AuditTrail /></Suspense>} />
-            <Route path="/reports" element={<Suspense fallback={<PageFallback />}><ReportGenerator /></Suspense>} />
-            <Route path="/fhir" element={<Suspense fallback={<PageFallback />}><FhirExport /></Suspense>} />
-            <Route path="/metrics" element={<Suspense fallback={<PageFallback />}><AIMetrics /></Suspense>} />
-            <Route path="/upload" element={<Suspense fallback={<PageFallback />}><Upload /></Suspense>} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Route>
-        </Routes>
+      <PatientProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Suspense fallback={<PageFallback />}><Landing /></Suspense>} />
+            <Route element={<Layout />}>
+              <Route path="/dashboard" element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
+              <Route path="/timeline" element={<Suspense fallback={<PageFallback />}><TimelinePage /></Suspense>} />
+              <Route path="/patient" element={<Suspense fallback={<PageFallback />}><PatientPortal /></Suspense>} />
+              <Route path="/handoff" element={<Suspense fallback={<PageFallback />}><DoctorHandoff /></Suspense>} />
+              <Route path="/safety" element={<Suspense fallback={<PageFallback />}><SafetyChecks /></Suspense>} />
+              <Route path="/chat" element={<Suspense fallback={<PageFallback />}><Chat /></Suspense>} />
+              <Route path="/verify" element={<Suspense fallback={<PageFallback />}><VerificationQueue /></Suspense>} />
+              <Route path="/audit" element={<Suspense fallback={<PageFallback />}><AuditTrail /></Suspense>} />
+              <Route path="/reports" element={<Suspense fallback={<PageFallback />}><ReportGenerator /></Suspense>} />
+              <Route path="/fhir" element={<Suspense fallback={<PageFallback />}><FhirExport /></Suspense>} />
+              <Route path="/metrics" element={<Suspense fallback={<PageFallback />}><AIMetrics /></Suspense>} />
+              <Route path="/upload" element={<Suspense fallback={<PageFallback />}><Upload /></Suspense>} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Route>
+          </Routes>
 
-        {showInstall && (
-          <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
-            <div className="flex w-full max-w-2xl items-center justify-between gap-3 rounded-2xl border border-emerald-300 bg-emerald-100 px-4 py-3 text-emerald-950 shadow-md">
-              <span className="font-semibold text-xs sm:text-sm">Install CareSyncIQ on your device for sovereign offline health access</span>
-              <button
-                type="button"
-                className="rounded-lg border border-emerald-400 bg-white px-4 py-2 text-xs sm:text-sm font-bold text-emerald-900 transition hover:bg-emerald-50"
-                onClick={handleInstall}
-              >
-                Install
-              </button>
+          {showInstall && (
+            <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
+              <div className="flex w-full max-w-2xl items-center justify-between gap-3 rounded-2xl border border-emerald-300 bg-emerald-100 px-4 py-3 text-emerald-950 shadow-md">
+                <span className="font-semibold text-xs sm:text-sm">Install CareSyncIQ on your device for sovereign offline health access</span>
+                <button
+                  type="button"
+                  className="rounded-lg border border-emerald-400 bg-white px-4 py-2 text-xs sm:text-sm font-bold text-emerald-900 transition hover:bg-emerald-50"
+                  onClick={handleInstall}
+                >
+                  Install
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </BrowserRouter>
+          )}
+        </BrowserRouter>
+      </PatientProvider>
     </ErrorBoundary>
   );
 }

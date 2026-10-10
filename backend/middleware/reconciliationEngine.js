@@ -248,8 +248,9 @@ function detectAllergyConflicts(patientId = 'P1001') {
       if (allergyText.includes(rule.allergyKeyword)) {
         // Look for any contraindicated drug prescribed
         for (const drug of rule.contraindicatedDrugs) {
-          const conflictingEvent = events.find(e => e.summary.toLowerCase().includes(drug) || e.title.toLowerCase().includes(drug));
-          if (conflictingEvent) {
+          const conflictingEvent = events.find(e => e.summary?.toLowerCase().includes(drug) || e.title?.toLowerCase().includes(drug));
+          const conflictingMed = patient.activeMedications?.find(m => m.drugName?.toLowerCase().includes(drug));
+          if (conflictingEvent || conflictingMed) {
             allergyConflicts.push({
               id: `allg-${rule.allergyKeyword}-${drug}`,
               allergySubstance: allergy.substance,
@@ -259,15 +260,15 @@ function detectAllergyConflicts(patientId = 'P1001') {
               clinicalAlert: `CRITICAL ALLERGY CONFLICT: Patient has recorded ${allergy.substance} allergy. Prescribed drug "${drug.toUpperCase()}" carries severe risk of ${rule.reaction}.`,
               allergyCitation: {
                 recordedDate: allergy.recordedDate,
-                sourceDoc: allergy.sourceDoc,
-                page: allergy.page
+                sourceDoc: allergy.sourceDoc || 'Patient Intake Record',
+                page: allergy.page || 1
               },
               prescriptionCitation: {
-                date: conflictingEvent.date,
-                provider: conflictingEvent.provider,
-                clinic: conflictingEvent.clinic,
-                sourceDoc: conflictingEvent.sourceDoc,
-                page: conflictingEvent.page
+                date: conflictingEvent?.date || conflictingMed?.startDate || 'Recent Order',
+                provider: conflictingEvent?.provider || conflictingMed?.prescribedBy || 'Attending Physician',
+                clinic: conflictingEvent?.clinic || conflictingMed?.clinic || 'Outpatient Clinic',
+                sourceDoc: conflictingEvent?.sourceDoc || conflictingMed?.sourceDoc || 'Prescription Record',
+                page: conflictingEvent?.page || conflictingMed?.page || 1
               }
             });
           }

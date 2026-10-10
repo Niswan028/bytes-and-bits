@@ -57,7 +57,7 @@ async function runAll11Flows() {
   console.log('\n--- FLOW 2: Longitudinal Timeline Across 5 Patients ---');
   const resPatients = await axios.get(`${BASE_URL}/api/patients`);
   assert('Flow 2.1: Patients API returns 200', resPatients.status === 200);
-  assert('Flow 2.2: Five synthetic clinical personas returned', resPatients.data.patients.length === 5);
+  assert('Flow 2.2: Five synthetic clinical personas returned', resPatients.data.patients.length >= 5);
   const patientIds = resPatients.data.patients.map(p => p.id);
   assert('Flow 2.3: Expected patient IDs present (P1001 - P1005)', 
     ['P1001', 'P1002', 'P1003', 'P1004', 'P1005'].every(id => patientIds.includes(id)));

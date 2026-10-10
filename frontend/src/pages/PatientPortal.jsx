@@ -10,9 +10,11 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineCheckCircle,
   HiOutlineEye,
-  HiOutlineQrcode
+  HiOutlineQrcode,
+  HiOutlineUserAdd
 } from 'react-icons/hi';
 import { PATIENT_TIMELINE_CATALOG } from '../components/LongitudinalHealthTimeline';
+import { usePatient } from '../context/PatientContext';
 
 export const PATIENT_MEDICATIONS_MAP = {
   P1001: [
@@ -41,7 +43,8 @@ export const PATIENT_MEDICATIONS_MAP = {
 };
 
 export default function PatientPortal() {
-  const [patientId, setPatientId] = useState('P1001');
+  const { patients, activePatientId, setActivePatientId, openRegisterModal, activePatientDetails } = usePatient();
+  const [patientId, setPatientId] = useState(activePatientId || 'P1001');
   const [recipient, setRecipient] = useState('Dr. Sneha Roy (Fortis Care)');
   const [duration, setDuration] = useState('60'); // minutes
   const [scopeCondition, setScopeCondition] = useState('DIABETES_HYPERTENSION');
@@ -77,8 +80,25 @@ export default function PatientPortal() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [apiError, setApiError] = useState(null);
 
-  const patient = PATIENT_TIMELINE_CATALOG[patientId] || PATIENT_TIMELINE_CATALOG.P1001;
-  const currentMeds = PATIENT_MEDICATIONS_MAP[patientId] || PATIENT_MEDICATIONS_MAP.P1001;
+  const currentPatientMeta = patients.find(p => p.id === patientId) || patients[0];
+  const catalogPatient = PATIENT_TIMELINE_CATALOG[patientId];
+
+  const patient = {
+    id: currentPatientMeta?.id || patientId,
+    name: currentPatientMeta?.name || catalogPatient?.name || 'Patient',
+    age: currentPatientMeta?.age || catalogPatient?.age || 45,
+    gender: currentPatientMeta?.gender || catalogPatient?.gender || 'Male',
+    chronicConditions: catalogPatient?.chronicConditions || (currentPatientMeta?.chronicConditions || []).map(c => typeof c === 'string' ? c : c.name),
+    criticalAllergies: catalogPatient?.criticalAllergies || (currentPatientMeta?.allergies || []).map(a => typeof a === 'string' ? a : `${a.substance} (${a.reaction || 'Hypersensitivity'})`),
+  };
+
+  const currentMeds = PATIENT_MEDICATIONS_MAP[patientId] ||
+    (activePatientDetails?.activeMedications || currentPatientMeta?.activeMedications || []).map(m => ({
+      name: m.drugName || m.name,
+      status: m.status || 'Active',
+      statusColor: 'emerald',
+      schedule: `${m.frequency || m.instructions || '1 Tab OD'} • ${m.prescribedBy || m.clinic || 'Attending Physician'}`
+    }));
 
   // Sync consents with backend on patient change
   useEffect(() => {
@@ -188,23 +208,37 @@ export default function PatientPortal() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold text-slate-500">Patient:</span>
             <div className="flex flex-wrap gap-1.5 rounded-xl bg-slate-100 p-1 border border-slate-200">
-              {Object.values(PATIENT_TIMELINE_CATALOG).map(p => (
+              {patients.map(p => (
                 <button
                   key={p.id}
                   onClick={() => {
                     setPatientId(p.id);
+                    setActivePatientId(p.id);
                     setGeneratedCode(null);
                   }}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition flex items-center gap-1 ${
                     patientId === p.id ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  {p.name.split(' ')[0]}
+                  <span>{p.name.split(' ')[0]}</span>
+                  <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
+                    patientId === p.id ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {p.id}
+                  </span>
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={openRegisterModal}
+                className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition shadow-2xs"
+              >
+                <HiOutlineUserAdd className="text-emerald-700" />
+                <span>+ Add</span>
+              </button>
             </div>
           </div>
         </div>

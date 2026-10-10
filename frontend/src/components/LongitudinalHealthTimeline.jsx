@@ -7,7 +7,10 @@ import {
   HiOutlineFilter,
   HiOutlineTrendingUp,
   HiOutlineShieldCheck,
-  HiOutlineOfficeBuilding
+  HiOutlineOfficeBuilding,
+  HiOutlinePlusCircle,
+  HiOutlineUserAdd,
+  HiOutlineX
 } from 'react-icons/hi';
 import {
   LineChart,
@@ -19,6 +22,7 @@ import {
   ResponsiveContainer,
   ReferenceArea
 } from 'recharts';
+import { usePatient } from '../context/PatientContext';
 
 export const PATIENT_TIMELINE_CATALOG = {
   P1001: {
@@ -546,22 +550,105 @@ export const PATIENT_TIMELINE_CATALOG = {
   }
 };
 
-export default function LongitudinalHealthTimeline({ selectedPatientId = 'P1001', onSelectPatient }) {
-  const [activePatientId, setActivePatientId] = useState(selectedPatientId);
+export default function LongitudinalHealthTimeline({ selectedPatientId, onSelectPatient }) {
+  const { patients, activePatientId: contextId, setActivePatientId: setContextId, openRegisterModal, activePatientDetails, addPatientRecord } = usePatient();
+  const activePatientId = selectedPatientId || contextId || 'P1001';
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [activeChartIdx, setActiveChartIdx] = useState(0);
 
-  const patient = PATIENT_TIMELINE_CATALOG[activePatientId] || PATIENT_TIMELINE_CATALOG.P1001;
+  // Quick Clinical Entry Modal State
+  const [isQuickEntryOpen, setIsQuickEntryOpen] = useState(false);
+  const [entrySubmitting, setEntrySubmitting] = useState(false);
+  const [entryForm, setEntryForm] = useState({
+    type: 'VISIT',
+    title: 'Outpatient Consultation Note',
+    category: 'Outpatient Consultation',
+    provider: 'Dr. Attending Physician (MD)',
+    clinic: 'City Outpatient Care Clinic',
+    date: new Date().toISOString().split('T')[0],
+    summary: '',
+    medication: '',
+    dose: '',
+    labTest: '',
+    labValue: ''
+  });
+
+  const currentPatientMeta = patients.find(p => p.id === activePatientId) || patients[0];
+  const catalogData = PATIENT_TIMELINE_CATALOG[activePatientId];
+
+  // Merge events from catalog with live API events
+  const liveEvents = activePatientDetails?.id === activePatientId ? (activePatientDetails.timelineEvents || []) : [];
+  const baseEvents = catalogData ? catalogData.events : [];
+
+  const eventMap = new Map();
+  baseEvents.forEach(e => eventMap.set(e.id, e));
+  liveEvents.forEach(e => eventMap.set(e.id, e));
+  const allEvents = Array.from(eventMap.values());
+
+  const patient = {
+    id: currentPatientMeta?.id || activePatientId,
+    name: currentPatientMeta?.name || catalogData?.name || 'Patient',
+    age: currentPatientMeta?.age || catalogData?.age || 45,
+    gender: currentPatientMeta?.gender || catalogData?.gender || 'Male',
+    chronicConditions: catalogData?.chronicConditions || (currentPatientMeta?.chronicConditions || []).map(c => typeof c === 'string' ? c : c.name),
+    criticalAllergies: catalogData?.criticalAllergies || (currentPatientMeta?.allergies || []).map(a => typeof a === 'string' ? a : `${a.substance} (${a.reaction || 'Hypersensitivity'})`),
+    events: allEvents.length > 0 ? allEvents : baseEvents,
+    labCharts: catalogData?.labCharts || []
+  };
 
   const filteredEvents = patient.events.filter(e => {
     if (filterCategory === 'ALL') return true;
     if (filterCategory === 'SAFETY') return e.type === 'CONFLICT' || e.type === 'ALLERGY_ALERT' || e.type === 'DUPLICATE';
     if (filterCategory === 'LABS') return e.type === 'LAB' || e.type === 'DUPLICATE';
-    if (filterCategory === 'VISITS') return e.type === 'VISIT';
+    if (filterCategory === 'VISITS') return e.type === 'VISIT' || e.type === 'INTAKE';
     return true;
   });
 
   const currentChart = patient.labCharts[activeChartIdx] || patient.labCharts[0];
+
+  const handleSelectPatient = (id) => {
+    if (setContextId) setContextId(id);
+    if (onSelectPatient) onSelectPatient(id);
+    setActiveChartIdx(0);
+  };
+
+  const handleQuickEntrySubmit = async (e) => {
+    e.preventDefault();
+    if (!entryForm.summary.trim()) return;
+    setEntrySubmitting(true);
+    try {
+      const payload = {
+        type: entryForm.type,
+        title: entryForm.title,
+        category: entryForm.category,
+        provider: entryForm.provider,
+        clinic: entryForm.clinic,
+        date: entryForm.date,
+        summary: entryForm.summary,
+        medications: entryForm.medication ? [{ drugName: entryForm.medication, dose: entryForm.dose || 'Standard' }] : [],
+        labTests: entryForm.labTest ? [{ test: entryForm.labTest, value: entryForm.labValue }] : []
+      };
+      await addPatientRecord(patient.id, payload);
+      setIsQuickEntryOpen(false);
+      setEntryForm({
+        type: 'VISIT',
+        title: 'Outpatient Consultation Note',
+        category: 'Outpatient Consultation',
+        provider: 'Dr. Attending Physician (MD)',
+        clinic: 'City Outpatient Care Clinic',
+        date: new Date().toISOString().split('T')[0],
+        summary: '',
+        medication: '',
+        dose: '',
+        labTest: '',
+        labValue: ''
+      });
+    } catch (err) {
+      alert(`Failed to add record: ${err.message}`);
+    } finally {
+      setEntrySubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -579,25 +666,34 @@ export default function LongitudinalHealthTimeline({ selectedPatientId = 'P1001'
           </p>
         </div>
 
-        {/* Patient Tabs */}
-        <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1.5 border border-slate-200">
-          {Object.values(PATIENT_TIMELINE_CATALOG).map(p => (
+        {/* Dynamic Patient Tabs */}
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-100 p-1.5 border border-slate-200">
+          {patients.map(p => (
             <button
               key={p.id}
-              onClick={() => {
-                setActivePatientId(p.id);
-                setActiveChartIdx(0);
-                if (onSelectPatient) onSelectPatient(p.id);
-              }}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+              onClick={() => handleSelectPatient(p.id)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
                 activePatientId === p.id
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
-              {p.name} ({p.id})
+              <span>{p.name.split(' ')[0]}</span>
+              <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
+                activePatientId === p.id ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-200 text-slate-600'
+              }`}>
+                {p.id}
+              </span>
             </button>
           ))}
+          <button
+            type="button"
+            onClick={openRegisterModal}
+            className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition shadow-2xs"
+          >
+            <HiOutlineUserAdd className="text-emerald-700" />
+            <span>+ Add Patient</span>
+          </button>
         </div>
       </div>
 
@@ -707,27 +803,36 @@ export default function LongitudinalHealthTimeline({ selectedPatientId = 'P1001'
         </div>
       )}
 
-      {/* Filter Bar */}
-      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-xs">
-        <div className="flex items-center gap-2">
+      {/* Filter Bar & Quick Clinical Entry Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-xs">
+        <div className="flex flex-wrap items-center gap-2">
           <HiOutlineFilter className="text-slate-400" />
           <span className="text-xs font-bold text-slate-700">Filter Events:</span>
+          <div className="flex gap-1.5 ml-1">
+            {['ALL', 'VISITS', 'LABS', 'SAFETY'].map(cat => (
+              <button
+                key={cat}
+                onClick={() => setFilterCategory(cat)}
+                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                  filterCategory === cat
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-1.5">
-          {['ALL', 'VISITS', 'LABS', 'SAFETY'].map(cat => (
-            <button
-              key={cat}
-              onClick={() => setFilterCategory(cat)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
-                filterCategory === cat
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsQuickEntryOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-950 hover:bg-emerald-100 transition shadow-2xs self-start sm:self-auto"
+        >
+          <HiOutlinePlusCircle className="text-emerald-700 text-sm" />
+          <span>+ Add Clinical Entry</span>
+        </button>
       </div>
 
       {/* Chronological Timeline Stream */}
@@ -791,6 +896,145 @@ export default function LongitudinalHealthTimeline({ selectedPatientId = 'P1001'
           );
         })}
       </div>
+
+      {/* Quick Clinical Entry Modal */}
+      {isQuickEntryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <HiOutlinePlusCircle className="text-emerald-700 text-lg" />
+                  <span>Record Clinical Entry for {patient.name}</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Direct OPD consultation note, new prescription, or lab observation entry.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQuickEntryOpen(false)}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                <HiOutlineX className="text-lg" />
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickEntrySubmit} className="mt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Entry Type</label>
+                  <select
+                    value={entryForm.type}
+                    onChange={(e) => setEntryForm({ ...entryForm, type: e.target.value })}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 focus:border-emerald-500 focus:bg-white"
+                  >
+                    <option value="VISIT">Consultation Visit</option>
+                    <option value="PRESCRIPTION">Prescription (Rx)</option>
+                    <option value="LAB">Lab Observation</option>
+                    <option value="DISCHARGE">Discharge Summary</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={entryForm.date}
+                    onChange={(e) => setEntryForm({ ...entryForm, date: e.target.value })}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 focus:border-emerald-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Event / Consultation Title</label>
+                <input
+                  type="text"
+                  required
+                  value={entryForm.title}
+                  onChange={(e) => setEntryForm({ ...entryForm, title: e.target.value })}
+                  placeholder="e.g. Quarterly Diabetic Follow-up"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 focus:border-emerald-500 focus:bg-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Attending Clinician</label>
+                  <input
+                    type="text"
+                    value={entryForm.provider}
+                    onChange={(e) => setEntryForm({ ...entryForm, provider: e.target.value })}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Facility / Hospital</label>
+                  <input
+                    type="text"
+                    value={entryForm.clinic}
+                    onChange={(e) => setEntryForm({ ...entryForm, clinic: e.target.value })}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Clinical Assessment / Findings *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={entryForm.summary}
+                  onChange={(e) => setEntryForm({ ...entryForm, summary: e.target.value })}
+                  placeholder="e.g. Patient presents with mild dyspnea on exertion. Lungs clear to auscultation. Advised to continue current inhaler regimen."
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 focus:border-emerald-500 focus:bg-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Medication Prescribed (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Budesonide 200mcg"
+                    value={entryForm.medication}
+                    onChange={(e) => setEntryForm({ ...entryForm, medication: e.target.value })}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Dose / Frequency</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 1 Puff BD"
+                    value={entryForm.dose}
+                    onChange={(e) => setEntryForm({ ...entryForm, dose: e.target.value })}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickEntryOpen(false)}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={entrySubmitting || !entryForm.summary.trim()}
+                  className="rounded-xl border border-emerald-400 bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-40"
+                >
+                  {entrySubmitting ? 'Recording Entry...' : 'Save to Health Timeline'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

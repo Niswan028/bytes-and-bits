@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   HiOutlineExclamationCircle,
   HiOutlineDuplicate,
@@ -6,15 +6,46 @@ import {
   HiOutlineDocumentText,
   HiOutlineShieldCheck,
   HiOutlineInformationCircle,
-  HiOutlineFilter
+  HiOutlineFilter,
+  HiOutlineUserAdd
 } from 'react-icons/hi';
+import api from '../api/client';
 import { PATIENT_TIMELINE_CATALOG } from '../components/LongitudinalHealthTimeline';
+import { usePatient } from '../context/PatientContext';
 
 export default function SafetyChecks() {
-  const [patientId, setPatientId] = useState('P1001');
+  const { patients, activePatientId, setActivePatientId, openRegisterModal, activePatientDetails } = usePatient();
+  const [patientId, setPatientId] = useState(activePatientId || 'P1001');
   const [windowDays, setWindowDays] = useState(30);
+  const [liveSafetyData, setLiveSafetyData] = useState(null);
 
-  const patient = PATIENT_TIMELINE_CATALOG[patientId] || PATIENT_TIMELINE_CATALOG.P1001;
+  useEffect(() => {
+    let isMounted = true;
+    const loadSafety = async () => {
+      try {
+        const res = await api.get(`/safety/${patientId}?windowDays=${windowDays}`);
+        if (isMounted && res.data?.success) {
+          setLiveSafetyData(res.data);
+        }
+      } catch (err) {
+        console.warn('Safety fetch fallback:', err.message);
+      }
+    };
+    loadSafety();
+    return () => { isMounted = false; };
+  }, [patientId, windowDays]);
+
+  const currentPatientMeta = patients.find(p => p.id === patientId) || patients[0];
+  const catalogPatient = PATIENT_TIMELINE_CATALOG[patientId];
+  const patient = catalogPatient || {
+    id: currentPatientMeta?.id || patientId,
+    name: currentPatientMeta?.name || 'Patient',
+    age: currentPatientMeta?.age || 45,
+    gender: currentPatientMeta?.gender || 'Male',
+    chronicConditions: (currentPatientMeta?.chronicConditions || []).map(c => typeof c === 'string' ? c : c.name),
+    criticalAllergies: (currentPatientMeta?.allergies || []).map(a => typeof a === 'string' ? a : `${a.substance} (${a.reaction || 'Hypersensitivity'})`),
+    events: activePatientDetails?.timelineEvents || currentPatientMeta?.timelineEvents || []
+  };
 
   return (
     <div className="space-y-6">
@@ -34,21 +65,37 @@ export default function SafetyChecks() {
           </p>
         </div>
 
-        {/* Patient Switcher */}
-        <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1.5 border border-slate-200">
-          {Object.values(PATIENT_TIMELINE_CATALOG).map(p => (
+        {/* Dynamic Patient Switcher */}
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-100 p-1.5 border border-slate-200">
+          {patients.map(p => (
             <button
               key={p.id}
-              onClick={() => setPatientId(p.id)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+              onClick={() => {
+                setPatientId(p.id);
+                setActivePatientId(p.id);
+              }}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
                 patientId === p.id
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
-              {p.name}
+              <span>{p.name.split(' ')[0]}</span>
+              <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
+                patientId === p.id ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-200 text-slate-600'
+              }`}>
+                {p.id}
+              </span>
             </button>
           ))}
+          <button
+            type="button"
+            onClick={openRegisterModal}
+            className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition shadow-2xs"
+          >
+            <HiOutlineUserAdd className="text-emerald-700" />
+            <span>+ Add Patient</span>
+          </button>
         </div>
       </div>
 
@@ -657,6 +704,23 @@ export default function SafetyChecks() {
                     <td className="py-3 px-3 font-mono text-[10px] text-slate-500">cloudnine_urgent_care_rx.png</td>
                   </tr>
                 </>
+              )}
+
+              {!['P1001', 'P1002', 'P1003', 'P1004', 'P1005'].includes(patientId) && (
+                (activePatientDetails?.activeMedications || currentPatientMeta?.activeMedications || []).map((m, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50 transition">
+                    <td className="py-3 px-3 font-bold text-slate-900">{m.drugName || m.name}</td>
+                    <td className="py-3 px-3 text-slate-600">{m.dose || 'Standard'} • {m.frequency || m.instructions || '1 Tab OD'}</td>
+                    <td className="py-3 px-3 text-slate-500">{m.startDate || 'Recent Intake'}</td>
+                    <td className="py-3 px-3 text-slate-700">{m.clinic || 'City Outpatient Care'}</td>
+                    <td className="py-3 px-3">
+                      <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-900 border border-emerald-300">
+                        {m.status || 'Active & Monitored'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 font-mono text-[10px] text-slate-500">{m.sourceDoc || 'clinical_record.pdf'}</td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

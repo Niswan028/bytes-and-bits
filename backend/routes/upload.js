@@ -9,7 +9,8 @@ const { extractDocument } = require('../middleware/textExtractor');
 const { chunkAndEmbed } = require('../middleware/embedder');
 const { auditLedger } = require('../middleware/auditTrail');
 const { registerInMemoryDocument, getInMemoryDocuments } = require('../middleware/memoryStore');
-const { SYNTHETIC_SOURCE_DOCUMENTS } = require('../data/patientsData');
+const { SYNTHETIC_SOURCE_DOCUMENTS, SYNTHETIC_PATIENTS } = require('../data/patientsData');
+const { detectDuplicateLabTests, detectDrugInteractions, detectAllergyConflicts } = require('../middleware/reconciliationEngine');
 
 const router = express.Router();
 
@@ -74,10 +75,120 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       });
     }
 
-    const docType = classifyMedicalDocumentType(req.file.originalname, docResult.text);
+    const docType = req.body.documentType || classifyMedicalDocumentType(req.file.originalname, docResult.text);
     const docId = `doc_${Date.now()}`;
 
-    // Register in-memory
+    // Target patient identification
+    const requestedPatientId = req.body.patientId || docResult.structuredEntities?.patient?.uhid || 'P1001';
+    const targetPatient = SYNTHETIC_PATIENTS.find(p => p.id.toLowerCase() === requestedPatientId.toLowerCase()) || SYNTHETIC_PATIENTS[0];
+
+    const provider = req.body.doctor || docResult.structuredEntities?.provider?.doctor || 'Attending Physician';
+    const clinic = req.body.facility || docResult.structuredEntities?.provider?.facility || 'Outpatient Diagnostic Centre';
+    const eventDate = req.body.date || docResult.structuredEntities?.date || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    let eventType = 'VISIT';
+    let category = 'Clinical Consultation';
+    if (docType === 'prescription') {
+      eventType = 'PRESCRIPTION';
+      category = 'Prescription Order';
+    } else if (docType === 'lab_report') {
+      eventType = 'LAB';
+      category = 'Pathology & Biochemistry';
+    } else if (docType === 'discharge_summary') {
+      eventType = 'DISCHARGE';
+      category = 'Inpatient Discharge Summary';
+    } else if (docType === 'imaging_report') {
+      eventType = 'IMAGING';
+      category = 'Radiology & Imaging';
+    } else if (docType === 'pharmacy_log') {
+      eventType = 'DISPENSE';
+      category = 'Pharmacy Dispensing';
+    }
+
+    const eventId = `evt-${Date.now()}`;
+    const timelineEvent = {
+      id: eventId,
+      date: eventDate,
+      category,
+      type: eventType,
+      title: req.body.title || `${clinic} - ${docType.replace('_', ' ').toUpperCase()}`,
+      provider,
+      clinic,
+      badge: docResult.ocrConfidence < 0.75 ? 'Needs Clinician Review' : 'Verified Clinical Record',
+      badgeColor: docResult.ocrConfidence < 0.75 ? 'amber' : 'emerald',
+      summary: req.body.notes || (docResult.text.length > 250 ? docResult.text.slice(0, 250) + '...' : docResult.text),
+      sourceDoc: req.file.originalname,
+      page: 1,
+      ocrConfidence: `${(docResult.ocrConfidence * 100).toFixed(1)}%`,
+      isScanned: docResult.isScanned
+    };
+
+    // Prepend to target patient timeline
+    targetPatient.timelineEvents.unshift(timelineEvent);
+
+    // If medications extracted, append to patient activeMedications
+    if (docResult.structuredEntities?.medications?.length > 0) {
+      docResult.structuredEntities.medications.forEach(m => {
+        targetPatient.activeMedications.push({
+          drugName: m.drugName || m.name,
+          dose: m.dose || 'Standard',
+          form: 'Tablet',
+          frequency: m.instructions || '1 Tab OD',
+          route: 'Oral',
+          startDate: eventDate,
+          prescribedBy: provider,
+          clinic: clinic,
+          sourceDoc: req.file.originalname,
+          page: 1,
+          status: 'Active',
+          needsReview: m.needsReview || docResult.ocrConfidence < 0.75
+        });
+      });
+    }
+
+    // If lab tests extracted, append to patient labTrends
+    if (docResult.structuredEntities?.labTests?.length > 0) {
+      docResult.structuredEntities.labTests.forEach(l => {
+        targetPatient.labTrends.push({
+          date: eventDate,
+          test: l.name || l.testName,
+          value: parseFloat(l.value) || l.value,
+          unit: l.unit || '',
+          referenceRange: l.ref || l.referenceRange || '',
+          status: l.status || 'NORMAL',
+          provider: clinic,
+          sourceDoc: req.file.originalname,
+          page: 1
+        });
+      });
+    }
+
+    // If allergies extracted, append to patient allergies
+    if (docResult.structuredEntities?.allergies?.length > 0) {
+      docResult.structuredEntities.allergies.forEach(a => {
+        targetPatient.allergies.push({
+          substance: a.substance,
+          reaction: a.reaction || 'Hypersensitivity',
+          severity: a.severity || 'Moderate',
+          recordedDate: eventDate,
+          sourceDoc: req.file.originalname,
+          page: 1
+        });
+      });
+    }
+
+    // Run instant cross-provider safety check
+    const duplicateTests = detectDuplicateLabTests(targetPatient.id, 30);
+    const drugInteractions = detectDrugInteractions(targetPatient.id);
+    const allergyConflicts = detectAllergyConflicts(targetPatient.id);
+    const safetyAlerts = {
+      duplicateTests,
+      drugInteractions,
+      allergyConflicts,
+      totalAlerts: duplicateTests.length + drugInteractions.length + allergyConflicts.length
+    };
+
+    // Register in-memory doc cache
     registerInMemoryDocument({
       _id: docId,
       originalName: req.file.originalname,
@@ -94,25 +205,30 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     // Chunk and generate local vector embeddings
     await chunkAndEmbed(docId, docResult.pages, req.file.originalname);
 
-    // Append to cryptographic audit ledger
+    // Append to audit ledger
     auditLedger.appendEntry({
       eventType: 'RECORD_INGESTED',
-      patientId: docResult.structuredEntities?.patient?.uhid || 'P1001',
+      patientId: targetPatient.id,
       recordId: req.file.originalname,
-      description: `Uploaded and processed ${docType} (${req.file.originalname})`,
-      actor: 'Patient Portal Upload',
+      description: `Uploaded and parsed ${docType} (${req.file.originalname}) into ${targetPatient.name}'s longitudinal record`,
+      actor: 'Patient / Clinic Ingestion Desk',
       payload: {
         filename: req.file.originalname,
         documentType: docType,
+        patientId: targetPatient.id,
+        patientName: targetPatient.name,
         sha256Hash,
         ocrConfidence: docResult.ocrConfidence,
-        pageCount: docResult.pageCount
+        pageCount: docResult.pageCount,
+        safetyAlertsTriggered: safetyAlerts.totalAlerts
       }
     });
 
     res.json({
       success: true,
-      message: 'Medical record processed, verified, and logged in health registry.',
+      message: `Medical record parsed, verified, and integrated into ${targetPatient.name}'s health timeline.`,
+      patientId: targetPatient.id,
+      patientName: targetPatient.name,
       document: {
         id: docId,
         filename: req.file.originalname,
@@ -123,7 +239,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         sha256Seal: sha256Hash,
         structuredEntities: docResult.structuredEntities,
         needsClinicianReview: docResult.ocrConfidence < 0.75
-      }
+      },
+      createdTimelineEvent: timelineEvent,
+      safetyAlerts
     });
   } catch (err) {
     console.error('[Upload] Error processing file:', err.message);

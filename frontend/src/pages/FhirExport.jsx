@@ -8,17 +8,11 @@ import {
   HiOutlineUser,
   HiOutlineDocumentReport
 } from 'react-icons/hi';
-
-const PATIENTS = [
-  { id: 'P1001', name: 'Rajesh Sharma', conditions: 'Type 2 Diabetes, Essential Hypertension' },
-  { id: 'P1002', name: 'Priya Venkat', conditions: 'Severe Persistent Asthma, Hypothyroidism' },
-  { id: 'P1003', name: 'Anita Desai', conditions: 'Atrial Fibrillation, Deep Vein Thrombosis' },
-  { id: 'P1004', name: 'Vikram Malhotra', conditions: 'Post-CABG (Triple Bypass), Hypercholesterolemia, CKD 3a' },
-  { id: 'P1005', name: 'Sunita Rao', conditions: 'Hashimoto Thyroiditis, Osteopenia / Fracture Risk' }
-];
+import { usePatient } from '../context/PatientContext';
 
 export default function FhirExport() {
-  const [selectedPatientId, setSelectedPatientId] = useState('P1001');
+  const { patients, activePatientId, setActivePatientId } = usePatient();
+  const [selectedPatientId, setSelectedPatientId] = useState(activePatientId || 'P1001');
   const [fhirData, setFhirData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -172,11 +166,14 @@ export default function FhirExport() {
       </div>
 
       {/* Patient Selector Tabs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {PATIENTS.map(patient => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+        {patients.map(patient => (
           <button
             key={patient.id}
-            onClick={() => setSelectedPatientId(patient.id)}
+            onClick={() => {
+              setSelectedPatientId(patient.id);
+              setActivePatientId(patient.id);
+            }}
             className={`flex flex-col p-4 rounded-2xl border text-left transition-all ${
               selectedPatientId === patient.id
                 ? 'border-emerald-500 bg-emerald-50/60 shadow-xs ring-1 ring-emerald-500'
@@ -190,7 +187,11 @@ export default function FhirExport() {
               </span>
             </div>
             <p className="mt-1.5 font-bold text-slate-900 text-sm">{patient.name}</p>
-            <p className="mt-0.5 text-xs text-slate-500 truncate">{patient.conditions}</p>
+            <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+              {Array.isArray(patient.chronicConditions)
+                ? patient.chronicConditions.map(c => typeof c === 'string' ? c : c.name).join(', ')
+                : patient.conditions || 'Active Health Chart'}
+            </p>
           </button>
         ))}
       </div>

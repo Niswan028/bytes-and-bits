@@ -16,9 +16,11 @@ import {
   HiOutlineOfficeBuilding,
   HiOutlineCurrencyRupee,
   HiOutlineAdjustments,
-  HiOutlineQrcode
+  HiOutlineQrcode,
+  HiOutlineUserAdd
 } from 'react-icons/hi';
 import { PATIENT_TIMELINE_CATALOG } from '../components/LongitudinalHealthTimeline';
+import { usePatient } from '../context/PatientContext';
 
 // Extended clinical metadata tailored per patient
 const PATIENT_CLINICAL_PROFILES = {
@@ -192,13 +194,59 @@ const PATIENT_CLINICAL_PROFILES = {
 };
 
 export default function Dashboard() {
-  const [activePatientId, setActivePatientId] = useState('P1001');
+  const { patients, activePatientId, setActivePatientId, openRegisterModal, activePatientDetails } = usePatient();
   const [adaptTab, setAdaptTab] = useState('architecture');
   const [monthlyOpdVolume, setMonthlyOpdVolume] = useState(2500);
   const [simulationStatus, setSimulationStatus] = useState(null);
 
-  const patient = PATIENT_TIMELINE_CATALOG[activePatientId] || PATIENT_TIMELINE_CATALOG.P1001;
-  const profile = PATIENT_CLINICAL_PROFILES[activePatientId] || PATIENT_CLINICAL_PROFILES.P1001;
+  const currentPatientObj = patients.find(p => p.id === activePatientId) || patients[0];
+
+  const patient = PATIENT_TIMELINE_CATALOG[activePatientId] || {
+    id: currentPatientObj?.id || activePatientId,
+    name: currentPatientObj?.name || 'Patient',
+    age: currentPatientObj?.age || 45,
+    gender: currentPatientObj?.gender || 'Male',
+    chronicConditions: (currentPatientObj?.chronicConditions || []).map(c => typeof c === 'string' ? c : c.name),
+    criticalAllergies: (currentPatientObj?.allergies || []).map(a => typeof a === 'string' ? a : `${a.substance} (${a.reaction || 'Hypersensitivity'})`),
+    events: activePatientDetails?.timelineEvents || currentPatientObj?.timelineEvents || [],
+    labCharts: []
+  };
+
+  const profile = PATIENT_CLINICAL_PROFILES[activePatientId] || {
+    abhaAddress: currentPatientObj?.abhaAddress || `${currentPatientObj?.name?.toLowerCase().replace(/\s+/g, '.')}@abdm`,
+    primaryDiagnosis: (currentPatientObj?.chronicConditions || []).map(c => typeof c === 'string' ? c : c.name).join(' • ') || 'Longitudinal Chart Active',
+    vitals: [
+      { label: 'Blood Pressure', value: '124/80', unit: 'mmHg', status: 'NORMAL', note: 'Resting seated' },
+      { label: 'Heart Rate', value: '74', unit: 'bpm', status: 'NORMAL', note: 'Sinus rhythm' },
+      { label: 'SpO2', value: '98%', unit: 'Room Air', status: 'NORMAL', note: 'Optimal' },
+      { label: 'Random Glucose', value: '104', unit: 'mg/dL', status: 'NORMAL', note: 'Baseline' },
+      { label: 'eGFR', value: '88', unit: 'mL/min', status: 'NORMAL', note: 'Normal renal' },
+      { label: 'BMI', value: '24.1', unit: 'kg/m²', status: 'NORMAL', note: 'Eutrophic' }
+    ],
+    activeMedications: (activePatientDetails?.activeMedications || currentPatientObj?.activeMedications || []).map(m => ({
+      name: m.drugName || m.name,
+      dose: m.dose || 'Standard',
+      freq: m.frequency || m.freq || '1 Tab OD',
+      facility: m.clinic || 'City Outpatient Care',
+      doctor: m.prescribedBy || 'Attending Physician',
+      status: 'ACTIVE',
+      alert: 'Verified Intake'
+    })),
+    careTeam: [
+      { name: currentPatientObj?.primaryDoctor || 'Dr. Attending Physician', role: 'Attending Physician', clinic: currentPatientObj?.primaryClinic || 'City Outpatient Clinic' },
+      { name: 'CareSyncIQ AI Guard', role: 'Safety & Deduplication Agent', clinic: 'Registry Core' }
+    ],
+    safetySummary: {
+      alertCount: 0,
+      alertBadge: 'Sovereign Timeline Active',
+      wasteINR: 0,
+      wasteReason: 'Active Protection',
+      criticalPoints: [
+        'New sovereign longitudinal chart active.',
+        'Cross-provider deduplication and allergy safety checks running continuously.'
+      ]
+    }
+  };
 
   // Real-time hospital ROI calculations based on monthly OPD volume
   const duplicateTestsAvoidedMonthly = Math.round(monthlyOpdVolume * 0.055); // 5.5% repeat rate
@@ -248,11 +296,21 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* 5-Patient Switcher */}
+        {/* Dynamic Patient Switcher & Register Action */}
         <div className="flex flex-col lg:items-end gap-1.5 shrink-0">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Clinical Persona:</span>
-          <div className="flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-100 p-1.5 border border-slate-200 shadow-xs">
-            {Object.values(PATIENT_TIMELINE_CATALOG).map(p => (
+          <div className="flex items-center justify-between w-full lg:justify-end gap-2">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Patient Chart:</span>
+            <button
+              type="button"
+              onClick={openRegisterModal}
+              className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-900 hover:bg-emerald-100 transition shadow-2xs"
+            >
+              <HiOutlineUserAdd className="text-emerald-700" />
+              <span>+ Register Patient</span>
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-100 p-1.5 border border-slate-200 shadow-xs max-w-full">
+            {patients.map(p => (
               <button
                 key={p.id}
                 onClick={() => setActivePatientId(p.id)}

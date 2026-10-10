@@ -10,17 +10,11 @@ import {
   HiOutlinePrinter
 } from 'react-icons/hi';
 import { exportOfficialPdf } from '../utils/exportOfficialPdf';
-
-const PATIENTS = [
-  { id: 'P1001', name: 'Rajesh Sharma', age: 58, conditions: 'Type 2 Diabetes, Essential Hypertension' },
-  { id: 'P1002', name: 'Priya Venkat', age: 34, conditions: 'Severe Persistent Asthma, Hypothyroidism' },
-  { id: 'P1003', name: 'Anita Desai', age: 67, conditions: 'Atrial Fibrillation, Deep Vein Thrombosis' },
-  { id: 'P1004', name: 'Vikram Malhotra', age: 46, conditions: 'Post-CABG, Hypercholesterolemia, CKD 3a' },
-  { id: 'P1005', name: 'Sunita Rao', age: 52, conditions: 'Hashimoto Thyroiditis, Osteopenia / Fracture Risk' }
-];
+import { usePatient } from '../context/PatientContext';
 
 export default function ReportGenerator() {
-  const [selectedPatientId, setSelectedPatientId] = useState('P1001');
+  const { patients, activePatientId, setActivePatientId } = usePatient();
+  const [selectedPatientId, setSelectedPatientId] = useState(activePatientId || 'P1001');
   const [template, setTemplate] = useState('patient_longitudinal_health_record');
   const [dossier, setDossier] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -210,11 +204,14 @@ export default function ReportGenerator() {
           <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider block mb-2">
             Select Patient Subject
           </label>
-          <div className="grid grid-cols-3 gap-2">
-            {PATIENTS.map(p => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {patients.map(p => (
               <button
                 key={p.id}
-                onClick={() => setSelectedPatientId(p.id)}
+                onClick={() => {
+                  setSelectedPatientId(p.id);
+                  setActivePatientId(p.id);
+                }}
                 className={`p-2.5 rounded-xl border text-left transition ${
                   selectedPatientId === p.id
                     ? 'border-emerald-500 bg-emerald-50/70 text-emerald-950 font-bold ring-1 ring-emerald-500'

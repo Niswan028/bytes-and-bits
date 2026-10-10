@@ -13,16 +13,34 @@ import {
 } from 'react-icons/hi';
 import { PATIENT_TIMELINE_CATALOG } from '../components/LongitudinalHealthTimeline';
 import { exportOfficialPdf } from '../utils/exportOfficialPdf';
+import { usePatient } from '../context/PatientContext';
 
 export default function DoctorHandoff() {
-  const [patientId, setPatientId] = useState('P1001');
+  const { patients, activePatientId, setActivePatientId, activePatientDetails } = usePatient();
+  const [patientId, setPatientId] = useState(activePatientId || 'P1001');
   const [accessCodeInput, setAccessCodeInput] = useState('DOC-8942');
   const [verifiedConsent, setVerifiedConsent] = useState(null);
   const [accessError, setAccessError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState('CODE_ACCESS'); // 'CODE_ACCESS' or 'ER_DIRECT'
 
-  const catalogPatient = PATIENT_TIMELINE_CATALOG[patientId] || PATIENT_TIMELINE_CATALOG.P1001;
+  const currentPatientMeta = patients.find(p => p.id === patientId) || patients[0];
+  const catalogPatient = PATIENT_TIMELINE_CATALOG[patientId] || {
+    id: currentPatientMeta?.id || patientId,
+    name: currentPatientMeta?.name || 'Patient',
+    age: currentPatientMeta?.age || 45,
+    gender: currentPatientMeta?.gender || 'Male',
+    chronicConditions: (currentPatientMeta?.chronicConditions || []).map(c => typeof c === 'string' ? c : c.name),
+    criticalAllergies: (currentPatientMeta?.allergies || []).map(a => typeof a === 'string' ? a : `${a.substance} (${a.reaction || 'Hypersensitivity'})`)
+  };
+
+  const dynamicMeds = (activePatientDetails?.activeMedications || currentPatientMeta?.activeMedications || []).map(m => ({
+    drugName: m.drugName || m.name,
+    dose: m.dose || 'Standard',
+    frequency: m.frequency || m.instructions || '1 Tab OD',
+    clinic: m.clinic || m.prescribedBy || 'Attending Physician',
+    status: m.status || 'Active'
+  }));
 
   // Active patient data: either from verified token or from simulation catalog
   const currentPatient = (mode === 'CODE_ACCESS' && verifiedConsent) ? verifiedConsent.patient : {
@@ -30,7 +48,7 @@ export default function DoctorHandoff() {
     name: catalogPatient.name,
     age: catalogPatient.age,
     gender: catalogPatient.gender,
-    bloodGroup: patientId === 'P1001' ? 'B+' : patientId === 'P1002' ? 'O+' : patientId === 'P1003' ? 'A+' : patientId === 'P1004' ? 'O+' : 'B+',
+    bloodGroup: currentPatientMeta?.bloodGroup || (patientId === 'P1001' ? 'B+' : patientId === 'P1002' ? 'O+' : patientId === 'P1003' ? 'A+' : patientId === 'P1004' ? 'O+' : 'B+'),
     chronicConditions: catalogPatient.chronicConditions,
     criticalAllergies: catalogPatient.criticalAllergies,
     activeMedications: patientId === 'P1001' ? [
@@ -47,12 +65,12 @@ export default function DoctorHandoff() {
       { drugName: 'Atorvastatin IP', dose: '40 mg', frequency: '1 Tab HS bedtime', clinic: 'CMC Vellore Heart Centre', status: 'Needs Review', conflictNote: 'Rhabdomyolysis hazard with Gemfibrozil' },
       { drugName: 'Metoprolol Succinate', dose: '25 mg', frequency: '1 Tab BD', clinic: 'CMC Vellore Heart Centre', status: 'Active' },
       { drugName: 'Aspirin (Ecosprin)', dose: '75 mg', frequency: '1 Tab OD post-lunch', clinic: 'CMC Vellore Heart Centre', status: 'Active' }
-    ] : [
+    ] : patientId === 'P1005' ? [
       { drugName: 'Levothyroxine', dose: '100 mcg', frequency: '1 Tab OD 6:00 AM', clinic: 'Dr. Alok Verma', status: 'Needs Review', conflictNote: 'Chelated by co-administered Calcium' },
       { drugName: 'Calcium Carbonate + Vit D3', dose: '500 mg + 250 IU', frequency: '1 Tab BD meals', clinic: 'Aarthi Endocrine Clinic', status: 'Active' }
-    ],
-    emergencyContact: {
-      name: patientId === 'P1001' ? 'Sunita Sharma (Spouse)' : patientId === 'P1002' ? 'R. Venkat (Father)' : patientId === 'P1003' ? 'Vikram Desai (Son)' : patientId === 'P1004' ? 'Pooja Malhotra (Spouse)' : 'Rajesh Rao (Spouse)',
+    ] : dynamicMeds,
+    emergencyContact: currentPatientMeta?.emergencyContact || {
+      name: patientId === 'P1001' ? 'Sunita Sharma (Spouse)' : patientId === 'P1002' ? 'R. Venkat (Father)' : patientId === 'P1003' ? 'Vikram Desai (Son)' : patientId === 'P1004' ? 'Pooja Malhotra (Spouse)' : 'Family Contact',
       phone: '+91 98451-XXXXX'
     }
   };
@@ -163,9 +181,10 @@ export default function DoctorHandoff() {
 
           <button
             onClick={handleDownloadEmergencyPdf}
-            className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-xs font-black text-rose-900 shadow-md hover:bg-rose-50 transition shrink-0"
+            style={{ color: '#881337', backgroundColor: '#ffffff' }}
+            className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-xs font-black shadow-md hover:bg-rose-50 transition shrink-0"
           >
-            <HiOutlineDownload className="text-base" />
+            <HiOutlineDownload className="text-base" style={{ color: '#881337' }} />
             Export 1-Page Emergency PDF (QR Sealed)
           </button>
         </div>
@@ -195,15 +214,20 @@ export default function DoctorHandoff() {
         {mode === 'ER_DIRECT' ? (
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-xs font-bold text-slate-500">Patient:</span>
-            {Object.values(PATIENT_TIMELINE_CATALOG).map(p => (
+            {patients.map(p => (
               <button
                 key={p.id}
                 onClick={() => setPatientId(p.id)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
-                  patientId === p.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition flex items-center gap-1 ${
+                  patientId === p.id ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {p.name.split(' ')[0]}
+                <span>{p.name.split(' ')[0]}</span>
+                <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
+                  patientId === p.id ? 'bg-slate-700 text-slate-200' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {p.id}
+                </span>
               </button>
             ))}
           </div>
