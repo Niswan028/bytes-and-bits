@@ -2,12 +2,19 @@
 
 <div align="center">
 
+[![Live Production App](https://img.shields.io/badge/Live%20App-caresynciq.netlify.app-059669?style=for-the-badge&logo=netlify)](https://caresynciq.netlify.app/)
+[![Video Demo](https://img.shields.io/badge/Video%20Demo-Google%20Drive-EA4335?style=for-the-badge&logo=googledrive)](https://drive.google.com/file/d/1zB2xwMSwl8PyN8gpzrSIKbKKPVXJJjIa/view?usp=sharing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-059669.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![ABDM Compliant](https://img.shields.io/badge/ABDM-M1%20%7C%20M2%20%7C%20M3%20Compliant-0284c7?style=for-the-badge)](https://abdm.gov.in/)
 [![FHIR Standard](https://img.shields.io/badge/Interoperability-HL7%20FHIR%20R4%20Valid-10b981?style=for-the-badge)](https://hl7.org/fhir/R4/)
 [![System Status](https://img.shields.io/badge/System%20Status-Operational%20%5B%E2%9C%94%5D-10b981?style=for-the-badge)](https://github.com/Niswan028/bytes-and-bits)
 [![F1-Score](https://img.shields.io/badge/Field%20Extraction%20F1-96.8%25-amber?style=for-the-badge)](https://github.com/Niswan028/bytes-and-bits)
 [![Privacy Architecture](https://img.shields.io/badge/Privacy-Zero%20Real%20PHI%20%7C%20Patient--Owned-emerald?style=for-the-badge)](https://github.com/Niswan028/bytes-and-bits)
+
+<br />
+
+### 🌐 **Live Web Application**: [CareSyncIQ | Unified Health Timeline & Patient-Owned Records](https://caresynciq.netlify.app/)
+### 🎥 **Video Demo Walkthrough**: [Watch Live Platform Demo (Google Drive)](https://drive.google.com/file/d/1zB2xwMSwl8PyN8gpzrSIKbKKPVXJJjIa/view?usp=sharing)
 
 **A patient-owned HealthTech platform that unifies records from disparate outpatient clinics, pathology networks, and hospitals into one verified longitudinal timeline — preventing repeated diagnostics, intercepting cross-provider medication conflicts, and sharing scoped history under patient-controlled consent.**
 
