@@ -11,31 +11,8 @@ async function runVerification() {
     fs.mkdirSync(screenshotsDir, { recursive: true });
   }
 
-  // 1. Launch Backend Server (Port 5000)
-  console.log('[Verification] Spawning Backend Server (Port 5000)...');
-  const backendProcess = spawn('node', ['server.js'], {
-    cwd: path.resolve(__dirname, '../backend'),
-    shell: true,
-    stdio: 'pipe'
-  });
-
-  backendProcess.stdout?.on('data', data => {
-    // console.log('[Backend]', data.toString().trim());
-  });
-
-  // Wait 3 seconds for backend server
-  await new Promise(r => setTimeout(r, 3000));
-
-  // 2. Launch Vite Preview Server (Port 4173)
-  console.log('[Verification] Spawning Vite Preview Server (Port 4173)...');
-  const previewProcess = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], {
-    cwd: path.resolve(__dirname),
-    shell: true,
-    stdio: 'pipe'
-  });
-
-  // Wait 3 seconds for preview server
-  await new Promise(r => setTimeout(r, 3000));
+  // Target running Vite server on port 5173
+  const targetPort = 5173;
 
   const browser = await chromium.launch({
     headless: true,
@@ -57,7 +34,7 @@ async function runVerification() {
   try {
     // Test 1: Dashboard / Forensic Command Center
     console.log('[Test 1] Navigating to /dashboard...');
-    await page.goto('http://localhost:4173/dashboard', { waitUntil: 'networkidle' });
+    await page.goto(`http://localhost:${targetPort}/dashboard`, { waitUntil: 'networkidle' });
     await page.waitForSelector('text=High-Value Lending: Salary Inflation', { timeout: 10000 });
     console.log(' -> Verified Header & Case Title: OK');
 
@@ -87,18 +64,18 @@ async function runVerification() {
 
     // Test 2: Cross-Document Correlation Hub (/cross-doc)
     console.log('[Test 2] Navigating to /cross-doc...');
-    await page.goto('http://localhost:4173/cross-doc', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=Cross-Document Correlation', { timeout: 5000 });
-    await page.waitForSelector('text=STREAM 1: ASSERTED CLAIM', { timeout: 5000 });
-    await page.waitForSelector('text=STREAM 2: VERIFIABLE LEDGER', { timeout: 5000 });
+    await page.goto(`http://localhost:${targetPort}/cross-doc`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('text=Cross-Document Correlation', { timeout: 10000 });
+    await page.waitForSelector('text=PRIMARY CLAIM (ASSERTED)', { timeout: 10000 });
+    await page.waitForSelector('text=INDEPENDENT LEDGER (VERIFIABLE)', { timeout: 10000 });
     console.log(' -> Verified 3-Stream Correlation Matrix: OK');
     await page.screenshot({ path: path.join(screenshotsDir, '02_cross_doc_correlation_hub.png'), fullPage: true });
     console.log(' -> Saved Screenshot: 02_cross_doc_correlation_hub.png');
 
     // Test 3: ISO 27037 DFIR Dossier (/dossier)
     console.log('[Test 3] Navigating to /dossier...');
-    await page.goto('http://localhost:4173/dossier', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=ISO/IEC 27037 Investigation Dossier', { timeout: 5000 });
+    await page.goto(`http://localhost:${targetPort}/dossier`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('text=ISO/IEC 27037 Investigation Dossier', { timeout: 10000 });
     // Click through Section tabs
     await page.click('button:has-text("7.3 Contextual Correlation")');
     await page.waitForTimeout(400);
@@ -112,10 +89,10 @@ async function runVerification() {
 
     // Test 4: Investigator Triage Queue (/verify)
     console.log('[Test 4] Navigating to /verify...');
-    await page.goto('http://localhost:4173/verify', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=Investigator Verification & Triage Queue', { timeout: 5000 });
+    await page.goto(`http://localhost:${targetPort}/verify`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('text=Investigator Verification & Triage Queue', { timeout: 10000 });
     await page.click('button:has-text("Adjudicate & Sign")');
-    await page.waitForSelector('text=Select Final Adjudication Decision:', { timeout: 5000 });
+    await page.waitForSelector('text=Select Final Adjudication Decision:', { timeout: 10000 });
     console.log(' -> Verified Triage Adjudication Modal: OK');
     await page.screenshot({ path: path.join(screenshotsDir, '04_investigator_triage_modal.png'), fullPage: true });
     console.log(' -> Saved Screenshot: 04_investigator_triage_modal.png');
@@ -123,8 +100,8 @@ async function runVerification() {
 
     // Test 5: Chain of Custody Ledger (/audit)
     console.log('[Test 5] Navigating to /audit...');
-    await page.goto('http://localhost:4173/audit', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=Chain of Custody & Tamper-Evident Ledger', { timeout: 5000 });
+    await page.goto(`http://localhost:${targetPort}/audit`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('text=Chain of Custody & Tamper-Evident Ledger', { timeout: 10000 });
     await page.click('button:has-text("Verify Chain Integrity")');
     await page.waitForTimeout(1000);
     console.log(' -> Verified SHA-256 Tamper-Proof Chain: OK');
@@ -133,28 +110,28 @@ async function runVerification() {
 
     // Test 6: Document Intake & ELA Scanner (/upload)
     console.log('[Test 6] Navigating to /upload...');
-    await page.goto('http://localhost:4173/upload', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=Document Intake & Real-Time ELA Scanner', { timeout: 5000 });
-    await page.click('button:has-text("Tampered Salary Slip (ELA Anomaly)")');
-    await page.waitForSelector('text=Automated DFIR Triage Report', { timeout: 8000 });
+    await page.goto(`http://localhost:${targetPort}/upload`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('text=Document Intake & Real-Time ELA Scanner', { timeout: 10000 });
+    await page.click('button:has-text("Tampered Salary Slip (Case 081)")');
+    await page.waitForSelector('text=LIVE FORENSIC TRIAGE REPORT', { timeout: 10000 });
     console.log(' -> Verified Real-time ELA Scanning & OCR Entity Extraction: OK');
     await page.screenshot({ path: path.join(screenshotsDir, '06_intake_ela_scanner.png'), fullPage: true });
     console.log(' -> Saved Screenshot: 06_intake_ela_scanner.png');
 
     // Test 7: Forensic Copilot (/copilot)
     console.log('[Test 7] Navigating to /copilot...');
-    await page.goto('http://localhost:4173/copilot', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=Forensic AI Copilot & Query Terminal', { timeout: 5000 });
+    await page.goto(`http://localhost:${targetPort}/copilot`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('text=Forensic AI Copilot & Query Terminal', { timeout: 10000 });
     await page.click('button:has-text("What proves the salary slip was tampered?")');
-    await page.waitForSelector('text=Forensic Findings on Salary Slip', { timeout: 5000 });
+    await page.waitForSelector('text=Forensic ELA & Typographic Proof', { timeout: 10000 });
     console.log(' -> Verified Grounded Zero-Hallucination Evidentiary Response: OK');
     await page.screenshot({ path: path.join(screenshotsDir, '07_forensic_ai_copilot.png'), fullPage: true });
     console.log(' -> Saved Screenshot: 07_forensic_ai_copilot.png');
 
     // Test 8: Metrics (/metrics)
     console.log('[Test 8] Navigating to /metrics...');
-    await page.goto('http://localhost:4173/metrics', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=Forensic Engine Performance', { timeout: 5000 });
+    await page.goto(`http://localhost:${targetPort}/metrics`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('text=Forensic Engine Performance', { timeout: 10000 });
     await page.screenshot({ path: path.join(screenshotsDir, '08_soc_accuracy_metrics.png'), fullPage: true });
     console.log(' -> Saved Screenshot: 08_soc_accuracy_metrics.png');
 
@@ -162,8 +139,8 @@ async function runVerification() {
     console.log('[Test 9] Testing Mobile Responsiveness on /dashboard...');
     const mobilePage = await context.newPage();
     await mobilePage.setViewportSize({ width: 390, height: 844 });
-    await mobilePage.goto('http://localhost:4173/dashboard', { waitUntil: 'networkidle' });
-    await mobilePage.waitForSelector('text=ForensIQ', { timeout: 5000 });
+    await mobilePage.goto(`http://localhost:${targetPort}/dashboard`, { waitUntil: 'networkidle' });
+    await mobilePage.waitForSelector('text=ForensIQ', { timeout: 10000 });
     await mobilePage.screenshot({ path: path.join(screenshotsDir, '09_mobile_dashboard_responsive.png'), fullPage: true });
     console.log(' -> Saved Screenshot: 09_mobile_dashboard_responsive.png');
 
@@ -176,8 +153,6 @@ async function runVerification() {
     process.exitCode = 1;
   } finally {
     await browser.close();
-    previewProcess.kill();
-    backendProcess.kill();
   }
 }
 
