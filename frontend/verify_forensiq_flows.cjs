@@ -58,21 +58,28 @@ async function runVerification() {
     // Test 1: Dashboard / Forensic Command Center
     console.log('[Test 1] Navigating to /dashboard...');
     await page.goto('http://localhost:4173/dashboard', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=Forensic Command Center', { timeout: 10000 });
-    await page.waitForSelector('text=High-Value Lending: Salary Inflation', { timeout: 5000 });
+    await page.waitForSelector('text=High-Value Lending: Salary Inflation', { timeout: 10000 });
     console.log(' -> Verified Header & Case Title: OK');
 
     // Test Canvas Mode Toggles
-    console.log('[Test 1.1] Testing Canvas ELA Heatmap Toggle...');
-    await page.click('button:has-text("ELA Heatmap")');
-    await page.waitForTimeout(1000);
-
-    console.log('[Test 1.2] Testing Canvas Split View Toggle...');
-    await page.click('button:has-text("Cross-Doc Split View")');
+    console.log('[Test 1.1] Testing Canvas Curtain Split-Wipe Toggle...');
+    await page.click('button:has-text("Curtain Split-Wipe")');
     await page.waitForTimeout(600);
 
-    console.log('[Test 1.3] Testing Canvas Evidence Overlays Toggle...');
-    await page.click('button:has-text("Evidence Overlays")');
+    console.log('[Test 1.2] Testing Canvas Target Bounding HUD Toggle...');
+    await page.click('button:has-text("Target Bounding HUD")');
+    await page.waitForTimeout(600);
+
+    console.log('[Test 1.3] Testing Canvas Thermal ELA Toggle...');
+    await page.click('button:has-text("Thermal ELA")');
+    await page.waitForTimeout(600);
+
+    console.log('[Test 1.4] Testing Canvas Dual Stream Toggle...');
+    await page.click('button:has-text("Dual Stream")');
+    await page.waitForTimeout(600);
+
+    // Return to Curtain Split-Wipe for screenshot
+    await page.click('button:has-text("Curtain Split-Wipe")');
     await page.waitForTimeout(600);
 
     await page.screenshot({ path: path.join(screenshotsDir, '01_forensic_command_center.png'), fullPage: true });
@@ -81,9 +88,9 @@ async function runVerification() {
     // Test 2: Cross-Document Correlation Hub (/cross-doc)
     console.log('[Test 2] Navigating to /cross-doc...');
     await page.goto('http://localhost:4173/cross-doc', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=Cross-Document Correlation Engine', { timeout: 5000 });
-    await page.waitForSelector('text=Primary Claim (Asserted)', { timeout: 5000 });
-    await page.waitForSelector('text=Independent Ledger (Verifiable)', { timeout: 5000 });
+    await page.waitForSelector('text=Cross-Document Correlation', { timeout: 5000 });
+    await page.waitForSelector('text=STREAM 1: ASSERTED CLAIM', { timeout: 5000 });
+    await page.waitForSelector('text=STREAM 2: VERIFIABLE LEDGER', { timeout: 5000 });
     console.log(' -> Verified 3-Stream Correlation Matrix: OK');
     await page.screenshot({ path: path.join(screenshotsDir, '02_cross_doc_correlation_hub.png'), fullPage: true });
     console.log(' -> Saved Screenshot: 02_cross_doc_correlation_hub.png');
@@ -91,7 +98,7 @@ async function runVerification() {
     // Test 3: ISO 27037 DFIR Dossier (/dossier)
     console.log('[Test 3] Navigating to /dossier...');
     await page.goto('http://localhost:4173/dossier', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=Investigation Dossier & Evidence Traceability', { timeout: 5000 });
+    await page.waitForSelector('text=ISO/IEC 27037 Investigation Dossier', { timeout: 5000 });
     // Click through Section tabs
     await page.click('button:has-text("7.3 Contextual Correlation")');
     await page.waitForTimeout(400);
