@@ -1,7 +1,7 @@
 import React, { Component, useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
-import { PatientProvider } from './context/PatientContext';
+import { ForensicProvider } from './context/ForensicContext';
 
 // Robust lazy loading with automatic retry on new deployments
 function lazyWithRetry(componentImport) {
@@ -28,32 +28,27 @@ function lazyWithRetry(componentImport) {
   });
 }
 
-// Lazy-loaded CareSyncIQ page chunks
-const Landing = lazyWithRetry(() => import('./pages/Landing'));
+// ForensIQ page chunks
 const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'));
-const TimelinePage = lazyWithRetry(() => import('./pages/TimelinePage'));
-const PatientPortal = lazyWithRetry(() => import('./pages/PatientPortal'));
-const DoctorHandoff = lazyWithRetry(() => import('./pages/DoctorHandoff'));
-const SafetyChecks = lazyWithRetry(() => import('./pages/SafetyChecks'));
-const Chat = lazyWithRetry(() => import('./pages/Chat'));
+const CrossDocHub = lazyWithRetry(() => import('./pages/CrossDocHub'));
+const ReportGenerator = lazyWithRetry(() => import('./pages/ReportGenerator'));
 const VerificationQueue = lazyWithRetry(() => import('./pages/VerificationQueue'));
 const AuditTrail = lazyWithRetry(() => import('./pages/AuditTrail'));
-const ReportGenerator = lazyWithRetry(() => import('./pages/ReportGenerator'));
-const FhirExport = lazyWithRetry(() => import('./pages/FhirExport'));
-const AIMetrics = lazyWithRetry(() => import('./pages/AIMetrics'));
 const Upload = lazyWithRetry(() => import('./pages/Upload'));
+const Chat = lazyWithRetry(() => import('./pages/Chat'));
+const AIMetrics = lazyWithRetry(() => import('./pages/AIMetrics'));
 
 function PageFallback() {
   return (
     <div className="mx-auto max-w-7xl animate-pulse space-y-6 p-6">
-      <div className="h-20 w-full rounded-2xl bg-zinc-100/80" />
+      <div className="h-20 w-full rounded-2xl bg-slate-800/60" />
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="h-28 rounded-xl bg-zinc-100/80" />
-        <div className="h-28 rounded-xl bg-zinc-100/80" />
-        <div className="h-28 rounded-xl bg-zinc-100/80" />
-        <div className="h-28 rounded-xl bg-zinc-100/80" />
+        <div className="h-28 rounded-xl bg-slate-800/60" />
+        <div className="h-28 rounded-xl bg-slate-800/60" />
+        <div className="h-28 rounded-xl bg-slate-800/60" />
+        <div className="h-28 rounded-xl bg-slate-800/60" />
       </div>
-      <div className="h-96 w-full rounded-2xl bg-zinc-100/80" />
+      <div className="h-96 w-full rounded-2xl bg-slate-800/60" />
     </div>
   );
 }
@@ -69,49 +64,24 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error) {
-    const isChunkError =
-      error?.message?.includes('Failed to fetch dynamically imported module') ||
-      error?.message?.includes('Importing a module script failed') ||
-      error?.message?.includes('dynamically imported module');
-
-    if (isChunkError && typeof window !== 'undefined') {
-      const lastReload = window.sessionStorage.getItem('chunk_reload_ts');
-      const now = Date.now();
-      if (!lastReload || now - parseInt(lastReload, 10) > 15000) {
-        window.sessionStorage.setItem('chunk_reload_ts', now.toString());
-        window.location.reload();
-      }
-    }
+    console.error('App ErrorBoundary caught:', error);
   }
 
   render() {
     if (this.state.hasError) {
-      const isChunkError =
-        this.state.error?.message?.includes('Failed to fetch dynamically imported module') ||
-        this.state.error?.message?.includes('Importing a module script failed') ||
-        this.state.error?.message?.includes('dynamically imported module');
-
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6 text-center">
-          <div className="max-w-md rounded-3xl border border-emerald-300 bg-white p-8 shadow-xl">
-            <span className="inline-block h-3.5 w-3.5 animate-ping rounded-full bg-emerald-500 mb-4" />
-            <h1 className="text-xl font-bold text-slate-900">
-              {isChunkError ? 'Updating to Latest Deployment' : 'CareSyncIQ Notice'}
-            </h1>
-            <p className="mt-2 text-sm text-slate-600">
-              {isChunkError
-                ? 'A new system update was applied. Refreshing to load latest modules...'
-                : 'A module requires reloading to restore session integrity.'}
+        <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 p-6 text-center text-white">
+          <div className="max-w-md rounded-3xl border border-cyan-500/40 bg-slate-900 p-8 shadow-xl">
+            <span className="inline-block h-3.5 w-3.5 animate-ping rounded-full bg-cyan-400 mb-4" />
+            <h1 className="text-xl font-bold text-white">ForensIQ System Alert</h1>
+            <p className="mt-2 text-sm text-slate-400">
+              Session refreshed to load latest SOC modules.
             </p>
             <button
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  window.location.reload();
-                }
-              }}
-              className="mt-6 inline-flex items-center gap-2 rounded-xl border border-emerald-400 bg-emerald-100 px-5 py-2.5 text-xs font-bold text-emerald-950 shadow-xs hover:bg-emerald-200 transition"
+              onClick={() => window.location.reload()}
+              className="mt-6 inline-flex items-center gap-2 rounded-xl border border-cyan-400 bg-cyan-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-md hover:bg-cyan-400 transition"
             >
-              Refresh Page
+              Refresh Terminal
             </button>
           </div>
         </div>
@@ -122,67 +92,28 @@ class ErrorBoundary extends Component {
 }
 
 function App() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showInstall, setShowInstall] = useState(false);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstall(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-  }, []);
-
-  const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-    setShowInstall(false);
-  };
-
   return (
     <ErrorBoundary>
-      <PatientProvider>
+      <ForensicProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Suspense fallback={<PageFallback />}><Landing /></Suspense>} />
             <Route element={<Layout />}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
-              <Route path="/timeline" element={<Suspense fallback={<PageFallback />}><TimelinePage /></Suspense>} />
-              <Route path="/patient" element={<Suspense fallback={<PageFallback />}><PatientPortal /></Suspense>} />
-              <Route path="/handoff" element={<Suspense fallback={<PageFallback />}><DoctorHandoff /></Suspense>} />
-              <Route path="/safety" element={<Suspense fallback={<PageFallback />}><SafetyChecks /></Suspense>} />
-              <Route path="/chat" element={<Suspense fallback={<PageFallback />}><Chat /></Suspense>} />
+              <Route path="/cross-doc" element={<Suspense fallback={<PageFallback />}><CrossDocHub /></Suspense>} />
+              <Route path="/dossier" element={<Suspense fallback={<PageFallback />}><ReportGenerator /></Suspense>} />
+              <Route path="/reports" element={<Navigate to="/dossier" replace />} />
               <Route path="/verify" element={<Suspense fallback={<PageFallback />}><VerificationQueue /></Suspense>} />
               <Route path="/audit" element={<Suspense fallback={<PageFallback />}><AuditTrail /></Suspense>} />
-              <Route path="/reports" element={<Suspense fallback={<PageFallback />}><ReportGenerator /></Suspense>} />
-              <Route path="/fhir" element={<Suspense fallback={<PageFallback />}><FhirExport /></Suspense>} />
-              <Route path="/metrics" element={<Suspense fallback={<PageFallback />}><AIMetrics /></Suspense>} />
               <Route path="/upload" element={<Suspense fallback={<PageFallback />}><Upload /></Suspense>} />
+              <Route path="/copilot" element={<Suspense fallback={<PageFallback />}><Chat /></Suspense>} />
+              <Route path="/chat" element={<Navigate to="/copilot" replace />} />
+              <Route path="/metrics" element={<Suspense fallback={<PageFallback />}><AIMetrics /></Suspense>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
-
-          {showInstall && (
-            <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
-              <div className="flex w-full max-w-2xl items-center justify-between gap-3 rounded-2xl border border-emerald-300 bg-emerald-100 px-4 py-3 text-emerald-950 shadow-md">
-                <span className="font-semibold text-xs sm:text-sm">Install CareSyncIQ on your device for sovereign offline health access</span>
-                <button
-                  type="button"
-                  className="rounded-lg border border-emerald-400 bg-white px-4 py-2 text-xs sm:text-sm font-bold text-emerald-900 transition hover:bg-emerald-50"
-                  onClick={handleInstall}
-                >
-                  Install
-                </button>
-              </div>
-            </div>
-          )}
         </BrowserRouter>
-      </PatientProvider>
+      </ForensicProvider>
     </ErrorBoundary>
   );
 }

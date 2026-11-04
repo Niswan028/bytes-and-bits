@@ -22,7 +22,7 @@ mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 1000 })
     console.warn(`[MongoDB Notice] Operating with in-memory clinical vector cache & filesystem ingestion: ${err.message}`);
   });
 
-// Core Clinical API Routes
+// Core Clinical API Routes (Preserved for compatibility)
 app.use('/api', require('./routes/patients'));
 app.use('/api', require('./routes/safety'));
 app.use('/api', require('./routes/consent'));
@@ -34,12 +34,17 @@ app.use('/api', require('./routes/chat'));
 app.use('/api', require('./routes/metrics'));
 app.use('/api', require('./routes/upload'));
 
+// DataOps Forensics & DFIR Routes
+app.use('/api', require('./routes/cases'));
+app.use('/api/forensics', require('./routes/forensics'));
+
 app.get('/', (req, res) => {
   res.json({
-    project: 'CareSyncIQ',
-    description: 'Patient-Owned Longitudinal Health Records, Multimodal Ingestion & Safety Engine',
-    version: '2.0.0',
-    hackathonTrack: 'HealthTech - Lost in Transit: Fragmented Medical Records Across Providers',
+    project: 'ForensIQ',
+    description: 'AI-Powered Document Forensics and Contextual Intelligence System (SOC | NOC | VAPT)',
+    version: '3.0.0',
+    hackathonTrack: 'DATAOPS (SOC | NOC | VAPT) INNOVATION HACKATHON',
+    standard: 'ISO/IEC 27037 & NIST SP 800-86 Compliant',
     status: 'ONLINE'
   });
 });
